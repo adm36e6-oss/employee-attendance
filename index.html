@@ -191,6 +191,7 @@ function getLocation() {
 
       const SITE_LAT = 27.849707905688682;
       const SITE_LNG = 41.724674620130635;
+
       const ALLOWED_RADIUS = 10;
       const MAX_ACCURACY = 100;
 
@@ -228,30 +229,40 @@ function getLocation() {
           Math.sqrt(1 - a)
         );
 
+      // أولاً: فحص دقة GPS
       if (accuracy > MAX_ACCURACY) {
 
         showMessage(
-          "⚠️ دقة GPS ضعيفة: " +
+          "❌ لا يمكن تسجيل الحضور.\n" +
+          "دقة GPS الحالية: " +
           Math.round(accuracy) +
           " متر.\n" +
-          "حاول الوقوف في مكان مفتوح وإعادة المحاولة."
+          "يجب أن تكون الدقة 100 متر أو أقل."
         );
+
+        document.getElementById("cameraBtn").style.display =
+          "none";
 
         return;
       }
 
+      // ثانيًا: فحص المسافة من موقع العمل
       if (distance > ALLOWED_RADIUS) {
 
         showMessage(
           "❌ أنت خارج نطاق موقع العمل.\n" +
-          "المسافة الحالية: " +
+          "المسافة عن الموقع: " +
           Math.round(distance) +
           " متر."
         );
 
+        document.getElementById("cameraBtn").style.display =
+          "none";
+
         return;
       }
 
+      // الموقع والدقة مقبولان
       showMessage(
         "✅ الموقع صحيح.\n" +
         "المسافة: " +
@@ -270,7 +281,7 @@ function getLocation() {
     function(error) {
 
       showMessage(
-        "تعذر تحديد الموقع: " +
+        "❌ تعذر تحديد الموقع: " +
         error.message
       );
 
