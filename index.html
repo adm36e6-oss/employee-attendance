@@ -175,184 +175,43 @@ function checkEmployee() {
 
 function getLocation() {
 
-  if (!navigator.geolocation) {
-    showMessage("هذا الجهاز لا يدعم تحديد الموقع");
-    return;
-  }
+  showMessage("جاري تحديد الموقع 📍...");
 
-  showMessage("جاري تحديد موقعك 📍...");
+  navigator.geolocation.getCurrentPosition(
+    function(position) {
 
-  const SITE_LAT = 27.849707905688682;
-  const SITE_LNG = 41.724674620130635;
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
+      accuracy = position.coords.accuracy;
 
-  const ALLOWED_RADIUS = 10;
-  const MAX_ACCURACY = 100;
-  const TOTAL_READINGS = 5;
-
-  let readings = [];
-
-  function calculateDistance(lat, lng) {
-
-    const R = 6371000;
-
-    const dLat =
-      (SITE_LAT - lat) *
-      Math.PI / 180;
-
-    const dLon =
-      (SITE_LNG - lng) *
-      Math.PI / 180;
-
-    const lat1 =
-      lat *
-      Math.PI / 180;
-
-    const lat2 =
-      SITE_LAT *
-      Math.PI / 180;
-
-    const a =
-      Math.sin(dLat / 2) *
-      Math.sin(dLat / 2) +
-      Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-    return R *
-      2 *
-      Math.atan2(
-        Math.sqrt(a),
-        Math.sqrt(1 - a)
+      showMessage(
+        "تم تحديد الموقع ✅\n" +
+        "دقة GPS: " +
+        Math.round(accuracy) +
+        " متر"
       );
-  }
 
-  function getNextReading() {
+      document.getElementById("cameraBtn").style.display =
+        "block";
+    },
 
-    showMessage(
-      "📍 جاري تحديد الموقع...\n" +
-      "القراءة " +
-      (readings.length + 1) +
-      " من " +
-      TOTAL_READINGS
-    );
+    function(error) {
 
-    navigator.geolocation.getCurrentPosition(
+      showMessage(
+        "تعذر تحديد الموقع: " +
+        error.message
+      );
 
-      function(position) {
+    },
 
-        const lat =
-          position.coords.latitude;
-
-        const lng =
-          position.coords.longitude;
-
-        const acc =
-          position.coords.accuracy;
-
-        const distance =
-          calculateDistance(lat, lng);
-
-        readings.push({
-          latitude: lat,
-          longitude: lng,
-          accuracy: acc,
-          distance: distance
-        });
-
-        if (readings.length < TOTAL_READINGS) {
-
-          setTimeout(
-            getNextReading,
-            1000
-          );
-
-          return;
-        }
-
-        // اختيار أفضل قراءة من حيث دقة GPS
-        readings.sort(
-          (a, b) =>
-            a.accuracy - b.accuracy
-        );
-
-        const best =
-          readings[0];
-
-        latitude =
-          best.latitude;
-
-        longitude =
-          best.longitude;
-
-        accuracy =
-          best.accuracy;
-
-        const distance =
-          best.distance;
-
-        if (accuracy > MAX_ACCURACY) {
-
-          showMessage(
-            "⚠️ دقة GPS ضعيفة.\n" +
-            "أفضل دقة تم الحصول عليها: " +
-            Math.round(accuracy) +
-            " متر.\n" +
-            "حاول الوقوف في مكان مفتوح وإعادة المحاولة."
-          );
-
-          return;
-        }
-
-        if (distance > ALLOWED_RADIUS) {
-
-          showMessage(
-            "❌ أنت خارج نطاق موقع العمل.\n" +
-            "أفضل قراءة: " +
-            Math.round(distance) +
-            " متر."
-          );
-
-          return;
-        }
-
-        showMessage(
-          "✅ الموقع صحيح.\n" +
-          "المسافة: " +
-          Math.round(distance) +
-          " متر.\n" +
-          "دقة GPS: " +
-          Math.round(accuracy) +
-          " متر."
-        );
-
-        document.getElementById("cameraBtn").style.display =
-          "block";
-
-      },
-
-      function(error) {
-
-        showMessage(
-          "تعذر تحديد الموقع: " +
-          error.message
-        );
-
-      },
-
-      {
-        enableHighAccuracy: true,
-        timeout: 60000,
-        maximumAge: 0
-      }
-
-    );
-  }
-
-  getNextReading();
+    {
+      enableHighAccuracy: true,
+      timeout: 60000,
+      maximumAge: 0
+    }
+  );
 
 }
-
 async function startCamera() {
 
   try {
