@@ -180,119 +180,206 @@ function getLocation() {
     return;
   }
 
-  showMessage("جاري تحديد موقعك 📍...");
+  const SITE_LAT = 27.849707905688682;
+  const SITE_LNG = 41.724674620130635;
 
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
+  const ALLOWED_RADIUS = 10;
+  const MAX_ACCURACY = 100;
+  const TOTAL_READINGS = 5;
 
-      latitude = position.coords.latitude;
-      longitude = position.coords.longitude;
-      accuracy = position.coords.accuracy;
+  let readings = [];
 
-      const SITE_LAT = 27.849707905688682;
-      const SITE_LNG = 41.724674620130635;
+  showMessage("📍 جاري تحسين دقة الموقع...");
 
-      const ALLOWED_RADIUS = 10;
-      const MAX_ACCURACY = 100;
+  function calculateDistance(lat, lng) {
 
-      const R = 6371000;
+    const R = 6371000;
 
-      const dLat =
-        (SITE_LAT - latitude) *
-        Math.PI / 180;
+    const dLat =
+      (SITE_LAT - lat) * Math.PI / 180;
 
-      const dLon =
-        (SITE_LNG - longitude) *
-        Math.PI / 180;
+    const dLon =
+      (SITE_LNG - lng) * Math.PI / 180;
 
-      const lat1 =
-        latitude *
-        Math.PI / 180;
+    const lat1 =
+      lat * Math.PI / 180;
 
-      const lat2 =
-        SITE_LAT *
-        Math.PI / 180;
+    const lat2 =
+      SITE_LAT * Math.PI / 180;
 
-      const a =
-        Math.sin(dLat / 2) *
-        Math.sin(dLat / 2) +
-        Math.cos(lat1) *
-        Math.cos(lat2) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
 
-      const distance =
-        R *
-        2 *
-        Math.atan2(
-          Math.sqrt(a),
-          Math.sqrt(1 - a)
+    return R *
+      2 *
+      Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1 - a)
+      );
+  }
+
+  function takeReading() {
+
+    showMessage(
+      "📍 جاري تحديد الموقع...\n" +
+      "القراءة " +
+      (readings.length + 1) +
+      " من " +
+      TOTAL_READINGS
+    );
+
+    navigator.geolocation.getCurrentPosition(
+
+      function(position) {
+
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const acc = position.coords.accuracy;
+
+        const distance =
+          calculateDistance(lat, lng);
+
+        readings.push({
+          latitude: lat,
+          longitude: lng,
+          accuracy: acc,
+          distance: distance
+        });
+
+        // لو حصلنا على قراءة دقيقة ومكانها داخل النطاق
+        if (
+          acc <= MAX_ACCURACY &&
+          distance <= ALLOWED_RADIUS
+        ) {
+
+          latitude = lat;
+          longitude = lng;
+          accuracy = acc;
+
+          showMessage(
+            "✅ الموقع صحيح.\n" +
+            "المسافة: " +
+            Math.round(distance) +
+            " متر.\n" +
+            "دقة GPS: " +
+            Math.round(acc) +
+            " متر."
+          );
+
+          document.getElementById("cameraBtn").style.display =
+            "block";
+
+          return;
+        }
+
+        // لو لسه فيه قراءات متبقية
+        if (readings.length < TOTAL_READINGS) {
+
+          setTimeout(
+            takeReading,
+            1000
+          );
+
+          return;
+        }
+
+        // انتهت كل المحاولات
+        const validReadings =
+          readings.filter(function(r) {
+            return r.accuracy <= MAX_ACCURACY;
+          });
+
+        if (validReadings.length === 0) {
+
+          showMessage(
+            "❌ لا يمكن تسجيل الحضور.\n" +
+            "لم نتمكن من الحصول على دقة GPS مناسبة.\n" +
+            "أفضل دقة حصلنا عليها: " +
+            Math.round(
+              Math.min.apply(
+                null,
+                readings.map(function(r) {
+                  return r.accuracy;
+                })
+              )
+            ) +
+            " متر."
+          );
+
+          return;
+        }
+
+        // اختيار القراءة الأقرب للموقع من القراءات المقبولة
+        validReadings.sort(
+          function(a, b) {
+            return a.distance - b.distance;
+          }
         );
 
-      // أولاً: فحص دقة GPS
-      if (accuracy > MAX_ACCURACY) {
+        const best =
+          validReadings[0];
+
+        latitude = best.latitude;
+        longitude = best.longitude;
+        accuracy = best.accuracy;
+
+        if (best.distance > ALLOWED_RADIUS) {
+
+          showMessage(
+            "❌ أنت خارج نطاق موقع العمل.\n" +
+            "أقرب قراءة: " +
+            Math.round(best.distance) +
+            " متر."
+          );
+
+          return;
+        }
 
         showMessage(
-          "❌ لا يمكن تسجيل الحضور.\n" +
-          "دقة GPS الحالية: " +
-          Math.round(accuracy) +
+          "✅ الموقع صحيح.\n" +
+          "المسافة: " +
+          Math.round(best.distance) +
           " متر.\n" +
-          "يجب أن تكون الدقة 100 متر أو أقل."
-        );
-
-        document.getElementById("cameraBtn").style.display =
-          "none";
-
-        return;
-      }
-
-      // ثانيًا: فحص المسافة من موقع العمل
-      if (distance > ALLOWED_RADIUS) {
-
-        showMessage(
-          "❌ أنت خارج نطاق موقع العمل.\n" +
-          "المسافة عن الموقع: " +
-          Math.round(distance) +
+          "دقة GPS: " +
+          Math.round(best.accuracy) +
           " متر."
         );
 
         document.getElementById("cameraBtn").style.display =
-          "none";
+          "block";
+      },
 
-        return;
+      function(error) {
+
+        if (readings.length < TOTAL_READINGS) {
+
+          setTimeout(
+            takeReading,
+            1000
+          );
+
+          return;
+        }
+
+        showMessage(
+          "❌ تعذر تحديد موقعك.\n" +
+          error.message
+        );
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 60000,
+        maximumAge: 0
       }
+    );
+  }
 
-      // الموقع والدقة مقبولان
-      showMessage(
-        "✅ الموقع صحيح.\n" +
-        "المسافة: " +
-        Math.round(distance) +
-        " متر.\n" +
-        "دقة GPS: " +
-        Math.round(accuracy) +
-        " متر."
-      );
-
-      document.getElementById("cameraBtn").style.display =
-        "block";
-
-    },
-
-    function(error) {
-
-      showMessage(
-        "❌ تعذر تحديد الموقع: " +
-        error.message
-      );
-
-    },
-
-    {
-      enableHighAccuracy: true,
-      timeout: 60000,
-      maximumAge: 0
-    }
-  );
+  takeReading();
 }
 async function startCamera() {
 
