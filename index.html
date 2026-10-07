@@ -331,8 +331,7 @@ const SITE_LNG = 41.724594;
 
           showMessage(
             "❌ أنت خارج نطاق موقع العمل.\n" +
-            "أقرب قراءة: " +
-            "أقرب قراءة: " +
+           "أقرب قراءة: " +
 best.distance.toFixed(2) +
 " متر."
           );
@@ -341,14 +340,14 @@ best.distance.toFixed(2) +
         }
 
         showMessage(
-          "✅ الموقع صحيح.\n" +
-          "المسافة: " +
-best.distance.toFixed(2) +
-" متر.\n"
-          "دقة GPS: " +
-          Math.round(best.accuracy) +
-          " متر."
-        );
+  "✅ الموقع صحيح.\n" +
+  "المسافة: " +
+  best.distance.toFixed(2) +
+  " متر.\n" +
+  "دقة GPS: " +
+  Math.round(best.accuracy) +
+  " متر."
+);
 
         document.getElementById("cameraBtn").style.display =
           "block";
