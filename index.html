@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>نظام حضور الموظفين</title>
 
   <style>
@@ -35,6 +36,7 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       text-align: center;
+      box-sizing: border-box;
     }
 
     button {
@@ -47,21 +49,49 @@
       cursor: pointer;
     }
 
+    #checkBtn {
+      background: #1976d2;
+      color: white;
+    }
+
+    #cameraBtn {
+      background: #f57c00;
+      color: white;
+    }
+
+    #captureBtn {
+      background: #388e3c;
+      color: white;
+    }
+
+    #submitBtn {
+      background: #7b1fa2;
+      color: white;
+    }
+
     #video {
       width: 100%;
       max-width: 400px;
       border-radius: 12px;
       margin-top: 15px;
+      display: none;
     }
 
     #canvas {
       display: none;
     }
 
+    #employee {
+      margin: 15px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
     #message {
       margin-top: 15px;
       font-size: 17px;
       font-weight: bold;
+      white-space: pre-line;
     }
   </style>
 </head>
@@ -79,29 +109,41 @@
     inputmode="numeric"
   >
 
-  <button onclick="checkEmployee()">
+  <button id="checkBtn" onclick="checkEmployee()">
     🔎 التحقق من الموظف
   </button>
 
   <div id="employee"></div>
 
-  <button id="locationBtn" onclick="getLocation()" style="display:none;">
-    📍 التحقق من الموقع
-  </button>
-
-  <video id="video" autoplay playsinline style="display:none;"></video>
-
-  <button id="cameraBtn" onclick="startCamera()" style="display:none;">
+  <button
+    id="cameraBtn"
+    onclick="startCamera()"
+    style="display:none;"
+  >
     📷 فتح الكاميرا
   </button>
 
-  <button id="captureBtn" onclick="capturePhoto()" style="display:none;">
+  <video
+    id="video"
+    autoplay
+    playsinline
+  ></video>
+
+  <button
+    id="captureBtn"
+    onclick="capturePhoto()"
+    style="display:none;"
+  >
     📸 التقاط الصورة
   </button>
 
   <canvas id="canvas"></canvas>
 
-  <button id="submitBtn" onclick="submitAttendance()" style="display:none;">
+  <button
+    id="submitBtn"
+    onclick="submitAttendance()"
+    style="display:none;"
+  >
     ✅ تسجيل الحضور / الانصراف
   </button>
 
@@ -109,21 +151,23 @@
 
 </div>
 
+
 <script>
 
 let employeeName = "";
-let latitude = null;
-let longitude = null;
-let accuracy = null;
 let imageData = null;
 let cameraStream = null;
+
 
 const SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzNVT-4K2g9vqwFbOtmfa3fPhR2c-zhklpMNjLyiZSgLT65YiOspddQbsJwVjueZrvQrg/exec";
 
 
 function showMessage(message) {
-  document.getElementById("message").innerText = message;
+
+  document.getElementById("message").innerText =
+    message;
+
 }
 
 
@@ -133,257 +177,87 @@ function checkEmployee() {
     document.getElementById("code").value.trim();
 
   if (!code) {
-    showMessage("من فضلك أدخل كود الموظف");
+
+    showMessage(
+      "من فضلك أدخل كود الموظف"
+    );
+
     return;
   }
 
-  showMessage("جاري التحقق...");
+  showMessage(
+    "جاري التحقق..."
+  );
+
 
   fetch(
     SCRIPT_URL +
     "?action=checkEmployee&code=" +
     encodeURIComponent(code)
   )
-  .then(response => response.json())
-  .then(data => {
+
+  .then(function(response) {
+
+    return response.json();
+
+  })
+
+  .then(function(data) {
 
     if (!data.success) {
-      showMessage(data.message);
+
+      showMessage(
+        "❌ " + data.message
+      );
+
       return;
     }
 
-    employeeName = data.name;
+    employeeName =
+      data.name;
 
     document.getElementById("employee").innerText =
-      "الموظف: " + employeeName;
+      "👤 الموظف: " +
+      employeeName;
 
-    document.getElementById("locationBtn").style.display =
+
+    document.getElementById("cameraBtn").style.display =
       "block";
 
-    showMessage("تم التحقق من الموظف ✅");
+
+    showMessage(
+      "تم التحقق من الموظف ✅"
+    );
 
   })
-  .catch(error => {
+
+  .catch(function(error) {
 
     showMessage(
       "حدث خطأ أثناء الاتصال بالنظام"
     );
 
   });
+
 }
 
 
-function getLocation() {
-
-  if (!navigator.geolocation) {
-    showMessage("هذا الجهاز لا يدعم تحديد الموقع");
-    return;
-  }
-
-  const SITE_LAT = 27.849708;
-const SITE_LNG = 41.724594;
-  
-  const ALLOWED_RADIUS = 15;
-  const MAX_ACCURACY = 100;
-  const TOTAL_READINGS = 5;
-
-  let readings = [];
-
-  showMessage("📍 جاري تحسين دقة الموقع...");
-
-  function calculateDistance(lat, lng) {
-
-    const R = 6371000;
-
-    const dLat =
-      (SITE_LAT - lat) * Math.PI / 180;
-
-    const dLon =
-      (SITE_LNG - lng) * Math.PI / 180;
-
-    const lat1 =
-      lat * Math.PI / 180;
-
-    const lat2 =
-      SITE_LAT * Math.PI / 180;
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-    return R *
-      2 *
-      Math.atan2(
-        Math.sqrt(a),
-        Math.sqrt(1 - a)
-      );
-  }
-
-  function takeReading() {
-
-    showMessage(
-      "📍 جاري تحديد الموقع...\n" +
-      "القراءة " +
-      (readings.length + 1) +
-      " من " +
-      TOTAL_READINGS
-    );
-
-    navigator.geolocation.getCurrentPosition(
-
-      function(position) {
-
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const acc = position.coords.accuracy;
-
-        const distance =
-          calculateDistance(lat, lng);
-
-        readings.push({
-          latitude: lat,
-          longitude: lng,
-          accuracy: acc,
-          distance: distance
-        });
-
-        // لو حصلنا على قراءة دقيقة ومكانها داخل النطاق
-        if (
-          acc <= MAX_ACCURACY &&
-          distance <= ALLOWED_RADIUS
-        ) {
-
-          latitude = lat;
-          longitude = lng;
-          accuracy = acc;
-
-          showMessage(
-            "✅ الموقع صحيح.\n" +
-            "المسافة: " +
-            Math.round(distance) +
-            " متر.\n" +
-            "دقة GPS: " +
-            Math.round(acc) +
-            " متر."
-          );
-
-          document.getElementById("cameraBtn").style.display =
-            "block";
-
-          return;
-        }
-
-        // لو لسه فيه قراءات متبقية
-        if (readings.length < TOTAL_READINGS) {
-
-          setTimeout(
-            takeReading,
-            1000
-          );
-
-          return;
-        }
-
-        // انتهت كل المحاولات
-        const validReadings =
-          readings.filter(function(r) {
-            return r.accuracy <= MAX_ACCURACY;
-          });
-
-        if (validReadings.length === 0) {
-
-          showMessage(
-            "❌ لا يمكن تسجيل الحضور.\n" +
-            "لم نتمكن من الحصول على دقة GPS مناسبة.\n" +
-            "أفضل دقة حصلنا عليها: " +
-            Math.round(
-              Math.min.apply(
-                null,
-                readings.map(function(r) {
-                  return r.accuracy;
-                })
-              )
-            ) +
-            " متر."
-          );
-
-          return;
-        }
-
-        // اختيار القراءة الأقرب للموقع من القراءات المقبولة
-        validReadings.sort(
-          function(a, b) {
-            return a.distance - b.distance;
-          }
-        );
-
-        const best =
-          validReadings[0];
-
-        latitude = best.latitude;
-        longitude = best.longitude;
-        accuracy = best.accuracy;
-
-        if (best.distance > ALLOWED_RADIUS) {
-
-          showMessage(
-            "❌ أنت خارج نطاق موقع العمل.\n" +
-           "أقرب قراءة: " +
-best.distance.toFixed(2) +
-" متر."
-          );
-
-          return;
-        }
-
-        showMessage(
-  "✅ الموقع صحيح.\n" +
-  "المسافة: " +
-  best.distance.toFixed(2) +
-  " متر.\n" +
-  "دقة GPS: " +
-  Math.round(best.accuracy) +
-  " متر."
-);
-
-        document.getElementById("cameraBtn").style.display =
-          "block";
-      },
-
-      function(error) {
-
-        if (readings.length < TOTAL_READINGS) {
-
-          setTimeout(
-            takeReading,
-            1000
-          );
-
-          return;
-        }
-
-        showMessage(
-          "❌ تعذر تحديد موقعك.\n" +
-          error.message
-        );
-      },
-
-      {
-        enableHighAccuracy: true,
-        timeout: 60000,
-        maximumAge: 0
-      }
-    );
-  }
-
-  takeReading();
-}
 async function startCamera() {
 
   try {
+
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+
+      showMessage(
+        "❌ الكاميرا غير مدعومة في هذا المتصفح"
+      );
+
+      return;
+    }
+
 
     cameraStream =
       await navigator.mediaDevices.getUserMedia({
@@ -396,19 +270,26 @@ async function startCamera() {
 
       });
 
+
     const video =
       document.getElementById("video");
+
 
     video.srcObject =
       cameraStream;
 
+
     video.style.display =
       "block";
+
 
     document.getElementById("captureBtn").style.display =
       "block";
 
-    showMessage("الكاميرا جاهزة 📷");
+
+    showMessage(
+      "الكاميرا جاهزة 📷"
+    );
 
   }
 
@@ -431,17 +312,35 @@ function capturePhoto() {
   const video =
     document.getElementById("video");
 
+
   const canvas =
     document.getElementById("canvas");
+
+
+  if (
+    !video.videoWidth ||
+    !video.videoHeight
+  ) {
+
+    showMessage(
+      "انتظر حتى تظهر صورة الكاميرا ثم حاول مرة أخرى."
+    );
+
+    return;
+  }
+
 
   canvas.width =
     video.videoWidth;
 
+
   canvas.height =
     video.videoHeight;
 
+
   const context =
     canvas.getContext("2d");
+
 
   context.drawImage(
     video,
@@ -451,28 +350,41 @@ function capturePhoto() {
     canvas.height
   );
 
+
   imageData =
     canvas.toDataURL(
       "image/jpeg",
       0.8
     );
 
+
   if (cameraStream) {
 
     cameraStream
       .getTracks()
-      .forEach(track => track.stop());
+      .forEach(function(track) {
+
+        track.stop();
+
+      });
 
   }
+
+
+  video.srcObject = null;
+
 
   video.style.display =
     "none";
 
+
   document.getElementById("captureBtn").style.display =
     "none";
 
+
   document.getElementById("submitBtn").style.display =
     "block";
+
 
   showMessage(
     "تم التقاط الصورة ✅"
@@ -486,33 +398,40 @@ function submitAttendance() {
   const code =
     document.getElementById("code").value.trim();
 
-  if (!latitude || !longitude) {
-    showMessage("لم يتم تحديد الموقع");
+
+  if (!code) {
+
+    showMessage(
+      "من فضلك أدخل كود الموظف"
+    );
+
     return;
   }
+
 
   if (!imageData) {
-    showMessage("لم يتم التقاط الصورة");
+
+    showMessage(
+      "لم يتم التقاط الصورة"
+    );
+
     return;
   }
 
+
   showMessage(
-    "جاري تسجيل الحضور..."
+    "جاري تسجيل الحضور... ⏳"
   );
+
 
   const data = {
 
     code: code,
 
-    latitude: latitude,
-
-    longitude: longitude,
-
-    accuracy: accuracy,
-
     image: imageData
 
   };
+
 
   fetch(
     SCRIPT_URL,
@@ -521,27 +440,46 @@ function submitAttendance() {
       method: "POST",
 
       headers: {
-        "Content-Type": "text/plain;charset=utf-8"
+        "Content-Type":
+          "text/plain;charset=utf-8"
       },
 
-      body: JSON.stringify(data)
+      body:
+        JSON.stringify(data)
 
     }
   )
 
-  .then(response =>
-    response.json()
-  )
+  .then(function(response) {
 
-  .then(result => {
-
-    showMessage(
-      result.message
-    );
+    return response.json();
 
   })
 
-  .catch(error => {
+  .then(function(result) {
+
+    if (result.success) {
+
+      showMessage(
+        "🎉 " +
+        result.message
+      );
+
+      document.getElementById("submitBtn").style.display =
+        "none";
+
+    } else {
+
+      showMessage(
+        "❌ " +
+        result.message
+      );
+
+    }
+
+  })
+
+  .catch(function(error) {
 
     showMessage(
       "حدث خطأ أثناء تسجيل الحضور"
