@@ -332,8 +332,9 @@ const SITE_LNG = 41.724594;
           showMessage(
             "❌ أنت خارج نطاق موقع العمل.\n" +
             "أقرب قراءة: " +
-            Math.round(best.distance) +
-            " متر."
+            "أقرب قراءة: " +
+best.distance.toFixed(2) +
+" متر."
           );
 
           return;
@@ -342,8 +343,8 @@ const SITE_LNG = 41.724594;
         showMessage(
           "✅ الموقع صحيح.\n" +
           "المسافة: " +
-          Math.round(best.distance) +
-          " متر.\n" +
+best.distance.toFixed(2) +
+" متر.\n"
           "دقة GPS: " +
           Math.round(best.accuracy) +
           " متر."
